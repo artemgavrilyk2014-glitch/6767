@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#030712"/>
+<title>MTA Manager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#030712; --surface:#0d1117; --card:#111827; --border:#1f2937;
+    --muted:#374151; --text:#e5e7eb; --sub:#9ca3af; --dim:#6b7280;
+    --green:#4ade80; --blue:#3b82f6; --indigo:#818cf8;
+    --yellow:#facc15; --orange:#fb923c; --red:#f87171;
+  }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; overflow:hidden; -webkit-tap-highlight-color:transparent; }
+  ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:var(--muted); border-radius:2px; }
+  input,button { font-family:inherit; font-size:14px; }
+  button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+  #app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
+
+  /* ── Header ── */
+  #header {
+    background:#080e19; border-bottom:1px solid var(--border);
+    padding:12px 14px env(safe-area-inset-top,0);
+    padding-top:max(12px, env(safe-area-inset-top));
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  #header .logo-icon { width:32px;height:32px;background:linear-gradient(135deg,#1d4ed8,#7c3aed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0; }
+  #header .title { font-weight:800; font-size:15px; }
+  #header .spacer { flex:1; }
+  #header .status { display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim); }
+  .dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+  .dot-green { background:var(--green);box-shadow:0 0 5px var(--green); }
+  .dot-red   { background:var(--red); }
+
+  /* ── Connect section ── */
+  #connect-section { padding:10px 14px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+  #connect-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  #connect-fields input { background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;width:100%; }
+  #inp-pass-m { grid-column:1/-1; }
+  #btn-conn-m { width:100%;background:var(--blue);color:#fff;border:none;border-radius:9px;padding:11px;font-weight:700;font-size:14px; }
+  #btn-disc-m { width:100%;background:var(--muted);color:var(--sub);border:none;border-radius:9px;padding:11px;font-weight:700; }
+
+  /* ── Stats ── */
+  #stat-row { display:flex;gap:8px;padding:10px 14px;flex-shrink:0;overflow-x:auto; }
+  .stat-card { background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 14px;flex:0 0 auto;min-width:100px; }
+  .stat-label { color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px; }
+  .stat-value { font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800; }
+
+  /* ── Tabs ── */
+  #tabs { display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0; }
+  .tab-btn { flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:10px 4px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .15s,border-color .15s; }
+  .tab-btn .tab-icon { font-size:18px; }
+  .tab-btn.active { color:var(--blue);border-bottom-color:var(--blue); }
+
+  /* ── Content ── */
+  #content { flex:1;overflow:hidden;display:flex;flex-direction:column; }
+  .tab-panel { display:none;flex:1;overflow-y:auto;padding:12px 14px;flex-direction:column;gap:10px;padding-bottom:env(safe-area-inset-bottom,12px); }
+  .tab-panel.active { display:flex; }
+
+  /* ── Player cards ── */
+  .player-card { background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px; }
+  .player-name { font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px; }
+  .player-meta { color:var(--dim);font-size:12px;margin-bottom:10px; }
+  .player-actions { display:flex;gap:6px;flex-wrap:wrap; }
+  .action-btn { border:none;border-radius:7px;padding:7px 14px;font-weight:700;font-size:12px; }
+  .ping-good{color:#4ade80;} .ping-ok{color:#facc15;} .ping-bad{color:#f87171;}
+  .badge{border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;}
+
+  /* ── Resource cards ── */
+  .res-card { background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px; }
+  .res-name { font-family:'JetBrains Mono',monospace;font-weight:700; }
+  .res-btns { display:flex;gap:6px; }
+
+  /* ── Console ── */
+  #console-log-m { background:#050a12;border:1px solid var(--border);border-radius:9px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;flex:1;overflow-y:auto;min-height:180px;max-height:55vh; }
+  .log-line{margin-bottom:2px;line-height:1.6;word-break:break-all;}
+  .log-time{color:var(--muted);margin-right:6px;}
+  .log-info{color:var(--sub);} .log-join{color:var(--green);} .log-warn{color:var(--yellow);} .log-error{color:var(--red);} .log-cmd{color:var(--blue);}
+  #console-row-m { display:flex;gap:8px;margin-top:8px;align-items:center; }
+  #console-input-m { flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px; }
+  #console-send-m { background:#16a34a;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-weight:700; }
+
+  /* ── Modal ── */
+  #modal-m { position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:200;padding-bottom:env(safe-area-inset-bottom,0); }
+  #modal-m.open { display:flex; }
+  #modal-box { background:var(--surface);border-radius:18px 18px 0 0;padding:24px;width:100%;border-top:1px solid var(--border); }
+  #modal-box h3 { font-size:16px;font-weight:800;color:#f87171;margin-bottom:12px; }
+  #modal-box input { width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:11px 12px;margin-bottom:10px; }
+  #modal-btns-m { display:flex;gap:10px; }
+  #modal-btns-m button { flex:1;padding:12px;border:none;border-radius:9px;font-weight:700;font-size:14px; }
+
+  /* ── Search ── */
+  .search-input { width:100%;background:var(--card);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;margin-bottom:2px; }
+
+  /* ── Empty ── */
+  .empty { color:var(--dim);text-align:center;padding:32px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="header">
+    <div class="logo-icon">🎮</div>
+    <div class="title">MTA Manager</div>
+    <div class="spacer"></div>
+    <div class="status">
+      <div class="dot dot-red" id="m-dot"></div>
+      <span id="m-status">Offline</span>
+    </div>
+  </div>
+
+  <div id="connect-section">
+    <div id="connect-form">
+      <div id="connect-fields">
+        <input id="m-host" placeholder="IP сервера" value=""/>
+        <input id="m-port" placeholder="Порт" value="22005"/>
+        <input id="m-pass" type="password" placeholder="Пароль API" class="" id="inp-pass-m" style="grid-column:1/-1"/>
+      </div>
+      <button id="btn-conn-m">🔌 Підключитись</button>
+    </div>
+    <div id="disconnect-form" style="display:none">
+      <button id="btn-disc-m">✕ Відключитись</button>
+    </div>
+  </div>
+
+  <div id="stat-row">
+    <div class="stat-card"><div class="stat-label">Гравці</div><div class="stat-value" id="m-s-pl" style="color:#4ade80">—</div></div>
+    <div class="stat-card"><div class="stat-label">Пінг</div><div class="stat-value" id="m-s-ping" style="color:#4ade80">—</div></div>
+    <div class="stat-card"><div class="stat-label">Аптайм</div><div class="stat-value" id="m-s-up" style="color:#818cf8;font-size:14px">—</div></div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="players"><span class="tab-icon">👥</span>Гравці</button>
+    <button class="tab-btn" data-tab="resources"><span class="tab-icon">📦</span>Ресурси</button>
+    <button class="tab-btn" data-tab="console"><span class="tab-icon">💻</span>Консоль</button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Сервер</button>
+  </div>
+
+  <div id="content">
+    <div class="tab-panel active" id="tab-players">
+      <input class="search-input" id="m-player-search" placeholder="🔍 Пошук гравця..."/>
+      <div id="m-players-list"><div class="empty">Підключіться до сервера</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-resources">
+      <input class="search-input" id="m-res-search" placeholder="🔍 Пошук ресурсу..."/>
+      <div id="m-resources-list"><div class="empty">Підключіться до сервера</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-console">
+      <div id="console-log-m"></div>
+      <div id="console-row-m">
+        <input id="console-input-m" placeholder="Команда..."/>
+        <button id="console-send-m">▶</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-stats">
+      <div id="m-stats"><div class="empty">Підключіться до сервера</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-m">
+  <div id="modal-box">
+    <h3>🚫 Бан гравця</h3>
+    <div id="m-modal-name" style="color:var(--sub);margin-bottom:12px"></div>
+    <input id="m-ban-reason" placeholder="Причина бану..."/>
+    <input id="m-ban-days" type="number" placeholder="Днів (0 = назавжди)" value="1" min="0"/>
+    <div id="modal-btns-m">
+      <button id="m-ban-confirm" style="background:#dc2626;color:#fff">Забанити</button>
+      <button id="m-ban-cancel" style="background:var(--muted);color:var(--sub)">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config & State ─────────────────────────────────────────────────────────
+let cfg = {host:'',port:'',pass:''};
+let connected = false;
+let pollIv = null;
+let banTarget = null;
+let allPlayers = [], allResources = [];
+
+// Detect Capacitor
+const isCapacitor = !!(window.Capacitor);
+
+// ── API ───────────────────────────────────────────────────────────────────
+async function api(path, method='GET', body=null) {
+  const url = `http://${cfg.host}:${cfg.port}${path}`;
+  try {
+    const opts = {
+      method, headers: {'Content-Type':'application/json','Authorization':`Bearer ${cfg.pass}`},
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    return {ok:true, data: await r.json()};
+  } catch(e) { return {ok:false, error:e.message}; }
+}
+
+// ── Connect ───────────────────────────────────────────────────────────────
+document.getElementById('btn-conn-m').onclick = async () => {
+  cfg.host = document.getElementById('m-host').value.trim();
+  cfg.port = document.getElementById('m-port').value.trim();
+  cfg.pass = document.getElementById('m-pass').value.trim();
+  if (!cfg.host||!cfg.port||!cfg.pass) { addLog('error','Заповніть всі поля'); return; }
+  addLog('info',`Підключення до ${cfg.host}:${cfg.port}...`);
+  const r = await api('/api/auth','POST',{password:cfg.pass});
+  if (r.ok && r.data?.success) {
+    setConn(true); addLog('join','Підключено!');
+    refreshAll(); pollIv = setInterval(refreshAll,5000);
+  } else { addLog('error','Помилка: '+(r.data?.error||r.error||'?')); }
+};
+
+document.getElementById('btn-disc-m').onclick = () => {
+  setConn(false); clearInterval(pollIv); addLog('warn','Відключено');
+};
+
+function setConn(s) {
+  connected=s;
+  document.getElementById('m-dot').className='dot '+(s?'dot-green':'dot-red');
+  document.getElementById('m-status').textContent=s?'Online':'Offline';
+  document.getElementById('connect-form').style.display=s?'none':'';
+  document.getElementById('disconnect-form').style.display=s?'':'none';
+}
+
+// ── Refresh ───────────────────────────────────────────────────────────────
+async function refreshAll() { await Promise.all([refreshServer(),refreshPlayers(),refreshResources()]); }
+
+async function refreshServer() {
+  const r=await api('/api/server'); if(!r.ok||!r.data?.success) return;
+  const d=r.data.data;
+  document.getElementById('m-s-pl').textContent=d.players+'/'+d.maxPlayers;
+  document.getElementById('m-s-ping').textContent=d.ping+'ms';
+  document.getElementById('m-s-up').textContent=d.uptime;
+  renderStats(d);
+}
+
+async function refreshPlayers() {
+  const r=await api('/api/players'); if(!r.ok||!r.data?.success) return;
+  allPlayers=r.data.data; renderPlayers();
+}
+
+async function refreshResources() {
+  const r=await api('/api/resources'); if(!r.ok||!r.data?.success) return;
+  allResources=r.data.data; renderResources();
+}
+
+// ── Players ───────────────────────────────────────────────────────────────
+function pingCls(p){return p<60?'ping-good':p<120?'ping-ok':'ping-bad';}
+function pingCol(p){return p<60?'#4ade80':p<120?'#facc15':'#f87171';}
+
+function renderPlayers(){
+  const q=document.getElementById('m-player-search').value.toLowerCase();
+  const list=allPlayers.filter(p=>p.name.toLowerCase().includes(q));
+  const el=document.getElementById('m-players-list');
+  if(!list.length){el.innerHTML=`<div class="empty">${allPlayers.length?'Не знайдено':'Гравців немає'}</div>`;return;}
+  el.innerHTML=list.map(p=>`
+    <div class="player-card">
+      <div class="player-name">
+        <span style="width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 5px #4ade80;flex-shrink:0;display:inline-block"></span>
+        ${esc(p.name)}
+        ${p.muted?'<span class="badge" style="background:#92400e22;color:#fbbf24;border:1px solid #92400e55">MUTE</span>':''}
+      </div>
+      <div class="player-meta">
+        Пінг: <span class="${pingCls(p.ping)}" style="font-family:monospace;font-weight:700">${p.ping}ms</span>
+        &nbsp;·&nbsp; Очки: ${p.score} &nbsp;·&nbsp; ${p.time}
+      </div>
+      <div class="player-actions">
+        <button class="action-btn" style="background:#92400e22;color:#fbbf24;border:1px solid #92400e55" onclick="muteP('${esc(p.name)}')">${p.muted?'🔊 Анмут':'🔇 Мут'}</button>
+        <button class="action-btn" style="background:#78350f22;color:#fb923c;border:1px solid #78350f55" onclick="kickP('${esc(p.name)}')">КІК</button>
+        <button class="action-btn" style="background:#7f1d1d22;color:#f87171;border:1px solid #7f1d1d55" onclick="openBan('${esc(p.name)}')">БАН</button>
+      </div>
+    </div>
+  `).join('');
+}
+document.getElementById('m-player-search').oninput=renderPlayers;
+
+async function kickP(name){const r=await api('/api/players/kick','POST',{name});if(r.data?.success){addLog('warn',`${name} кікнутий`);refreshPlayers();}}
+async function muteP(name){const r=await api('/api/players/mute','POST',{name});if(r.data?.success){addLog('info',r.data.data.message+': '+name);refreshPlayers();}}
+function openBan(name){banTarget=name;document.getElementById('m-modal-name').textContent='Гравець: '+name;document.getElementById('m-ban-reason').value='';document.getElementById('modal-m').classList.add('open');}
+document.getElementById('m-ban-confirm').onclick=async()=>{
+  if(!banTarget)return;
+  const reason=document.getElementById('m-ban-reason').value;
+  const days=parseInt(document.getElementById('m-ban-days').value)||1;
+  const r=await api('/api/players/ban','POST',{name:banTarget,reason,days});
+  if(r.data?.success){addLog('warn',`${banTarget} забанений`);refreshPlayers();}
+  document.getElementById('modal-m').classList.remove('open'); banTarget=null;
+};
+document.getElementById('m-ban-cancel').onclick=()=>{document.getElementById('modal-m').classList.remove('open');banTarget=null;};
+
+// ── Resources ─────────────────────────────────────────────────────────────
+function renderResources(){
+  const q=document.getElementById('m-res-search').value.toLowerCase();
+  const list=allResources.filter(r=>r.name.toLowerCase().includes(q));
+  const el=document.getElementById('m-resources-list');
+  if(!list.length){el.innerHTML='<div class="empty">Ресурсів немає</div>';return;}
+  el.innerHTML=list.map(r=>{
+    const on=r.status==='running';
+    return `<div class="res-card">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:9px;height:9px;border-radius:50%;background:${on?'#4ade80':'#374151'};box-shadow:${on?'0 0 5px #4ade8099':'none'};flex-shrink:0"></span>
+        <span class="res-name">${esc(r.name)}</span>
+      </div>
+      <div class="res-btns">
+        <button class="action-btn" style="background:#1d4ed822;color:#60a5fa;border:1px solid #1d4ed855" onclick="restartR('${esc(r.name)}')">↺</button>
+        <button class="action-btn" style="background:${on?'#7f1d1d22':'#14532d22'};color:${on?'#f87171':'#4ade80'};border:1px solid ${on?'#7f1d1d55':'#14532d55'}" onclick="${on?'stopR':'startR'}('${esc(r.name)}')">${on?'⏹':'▶'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('m-res-search').oninput=renderResources;
+async function startR(n){const r=await api('/api/resources/start','POST',{name:n});if(r.data?.success){addLog('join',`'${n}' запущено`);refreshResources();}}
+async function stopR(n){const r=await api('/api/resources/stop','POST',{name:n});if(r.data?.success){addLog('warn',`'${n}' зупинено`);refreshResources();}}
+async function restartR(n){const r=await api('/api/resources/restart','POST',{name:n});if(r.data?.success){addLog('info',`'${n}' перезапущено`);refreshResources();}}
+
+// ── Console ───────────────────────────────────────────────────────────────
+function addLog(type,text){
+  const t=new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const div=document.getElementById('console-log-m');
+  const line=document.createElement('div'); line.className='log-line';
+  line.innerHTML=`<span class="log-time">[${t}]</span><span class="log-${type}">${esc(text)}</span>`;
+  div.appendChild(line); div.scrollTop=div.scrollHeight;
+}
+document.getElementById('console-send-m').onclick=sendCmd;
+document.getElementById('console-input-m').onkeydown=e=>{if(e.key==='Enter')sendCmd();};
+async function sendCmd(){
+  const inp=document.getElementById('console-input-m'); const cmd=inp.value.trim();
+  if(!cmd||!connected)return; addLog('cmd','> '+cmd); inp.value='';
+  const r=await api('/api/console','POST',{command:cmd});
+  if(!r.data?.success)addLog('error',r.data?.error||'Помилка');
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function renderStats(d){
+  document.getElementById('m-stats').innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      ${[['Назва',d.name],['Гравці',d.players+'/'+d.maxPlayers],['Порт',d.port],['Аптайм',d.uptime],['Версія',d.version]].map(([k,v])=>`
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:12px 14px">
+          <span style="color:var(--dim)">${k}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600">${v||'—'}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  };
+});
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+addLog('info','MTA Manager Mobile запущено');
+addLog('info','Введіть дані сервера для підключення');
+</script>
+</body>
+</html>

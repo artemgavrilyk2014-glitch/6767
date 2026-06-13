@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta>
+    <info author="MTA-Manager" version="1.0.0" description="HTTP API for MTA Manager App"/>
+    <script src="server.lua" type="server"/>
+    <config src="settings.xml" type="shared"/>
+</meta>

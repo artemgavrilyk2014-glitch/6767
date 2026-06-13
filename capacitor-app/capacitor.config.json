@@ -1,0 +1,20 @@
+{
+  "appId": "com.mtamanager.mobile",
+  "appName": "MTA Manager",
+  "webDir": "src",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#030712"
+    }
+  }
+}

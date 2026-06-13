@@ -1,0 +1,89 @@
+name: Build EXE + APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Дозволяє запускати вручну
+
+jobs:
+
+  # ─── Збірка EXE (Windows) ───────────────────────────────────────────────────
+  build-exe:
+    name: 🖥️ Build Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Build EXE
+        working-directory: electron
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MTA-Manager-Windows
+          path: electron/dist/*.exe
+          retention-days: 30
+
+  # ─── Збірка APK (Android) ───────────────────────────────────────────────────
+  build-apk:
+    name: 📱 Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Capacitor dependencies
+        working-directory: capacitor-app
+        run: npm install
+
+      - name: Install Capacitor CLI globally
+        run: npm install -g @capacitor/cli
+
+      - name: Add Android platform
+        working-directory: capacitor-app
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: capacitor-app
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        working-directory: capacitor-app/android
+        run: chmod +x gradlew
+
+      - name: Build APK
+        working-directory: capacitor-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MTA-Manager-Android
+          path: capacitor-app/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30

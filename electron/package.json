@@ -1,0 +1,43 @@
+{
+  "name": "mta-server-manager",
+  "version": "1.0.0",
+  "description": "MTA Server Manager — Desktop App",
+  "main": "main.js",
+  "author": "MTA Manager",
+  "license": "MIT",
+  "scripts": {
+    "start":  "electron .",
+    "build":  "electron-builder --win --x64",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.mtamanager.app",
+    "productName": "MTA Server Manager",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "src/**", "assets/**"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["uk_UA", "en_US"],
+      "language": "1058"
+    }
+  }
+}
